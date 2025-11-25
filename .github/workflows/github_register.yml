@@ -1,8 +1,9 @@
-name: CI to Docker Hub
+name: Release to Docker Hub
 
 on:
   push:
-    branches: [ "main" ]
+    tags:
+      - "v*.*.*"
   workflow_dispatch:
 
 jobs:
@@ -12,7 +13,6 @@ jobs:
       - name: Check Out Repo
         uses: actions/checkout@v4
 
-      # Buildx(GitHub Actions)キャッシュ
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -22,15 +22,17 @@ jobs:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
 
-      - name: Build and push
+      - name: Build and push (tagged release)
         id: docker_build
         uses: docker/build-push-action@v5
         with:
           context: .
           file: ./Dockerfile
           push: true
-          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/simplewhale:latest
-          # GitHub Actions キャッシュを使う（推奨のghaキャッシュ）
+          # Gitのタグ名(v1.0.2等)でpush + latestも更新
+          tags: |
+            ${{ secrets.DOCKER_HUB_USERNAME }}/simplewhale:${{ github.ref_name }}
+            ${{ secrets.DOCKER_HUB_USERNAME }}/simplewhale:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
